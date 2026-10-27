@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {emptyState,validateState,needs,shopping,generate,replaceDay} from '../src/engine.mjs';
+import {recipes} from '../src/recipes.mjs';
+test('shared ingredients aggregate before pantry deduction',()=>{const id=recipes[0].id, ingredient=recipes[0].items[0];const list=shopping([id,id],2,{[ingredient.id]:ingredient.qty});const row=list.find(x=>x.id===ingredient.id);assert.equal(row.total,ingredient.qty*2);assert.equal(row.missing,ingredient.qty);});
+test('portions scale and surplus stock never makes negative purchases',()=>{const id=recipes[0].id;assert.equal(needs([id],4)[recipes[0].items[0].id],recipes[0].items[0].qty*2);assert(shopping([id],4,Object.fromEntries(recipes[0].items.map(i=>[i.id,100000]))).every(x=>x.missing===0));});
+test('generation respects vegetarian and time filters',()=>{const s=emptyState();s.diet='vegetarian';s.maxTime=20;assert(generate(s).every(id=>{const r=recipes.find(r=>r.id===id);return r.vegetarian&&r.time<=20;}));});
+test('locked recipes and free evenings are preserved',()=>{const s=emptyState();s.plan[0]=recipes[0].id;s.locked[0]=s.locked[1]=true;const p=generate(s);assert.equal(p[0],recipes[0].id);assert.equal(p[1],null);assert.equal(p.length,7);});
+test('full selection avoids duplicates with sufficient eligible recipes',()=>{assert.equal(new Set(generate(emptyState())).size,7);});
+test('replacement changes the selected recipe',()=>{const s=emptyState();s.plan=generate(s);assert.notEqual(replaceDay(s,0),s.plan[0]);});
+test('malformed imports fail without accepting unknown recipes or quantities',()=>{for(const patch of [{people:0},{people:2.5},{plan:Array(7).fill('unknown')},{pantry:{rice:-1}},{pantry:{rice:Infinity}},{pantry:[]},{locked:[]},{label:'x'.repeat(81)}])assert.throws(()=>validateState({...emptyState(),...patch}));});
