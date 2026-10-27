@@ -1,6 +1,0 @@
-[functions.billing]
-verify_jwt = false
-# billing validates the bearer token through auth.getUser itself.
-[functions.stripe-webhook]
-verify_jwt = false
-# stripe-webhook verifies Stripe's HMAC signature and timestamp itself.
