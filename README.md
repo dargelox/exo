@@ -6,9 +6,9 @@ Planifier ses repas à partir de son placard, adapter les portions et obtenir un
 
 - Planificateur utilisable sans compte : 16 recettes, filtres, portions, verrouillage de repas, placard avec quantités, courses, export/import JSON et impression.
 - Brouillon local au navigateur. Aucun compte ChatGPT requis.
-- Code de carnet Supabase et migration avec isolation des comptes et quotas serveur préparés, **non déployés et non testés sur une base distante**.
+- Base Supabase déployée à Paris. Tests SQL transactionnels réussis : création, mise à jour, quota gratuit, isolation des lectures et modifications entre deux comptes. Données de test annulées par rollback. Les connexions publiques restent désactivées en attente du SMTP et des redirections Auth.
 - Fonctions Stripe Checkout, portail et webhook préparées, **non déployées et non validées de bout en bout**. Aucun nouveau produit Stripe créé, aucun encaissement activé. L'interface ne propose pas de paiement.
-- **Pas encore de site public** : connexion Render et Supabase nécessaire. Aucun déploiement ChatGPT Sites prévu.
+- **Site public** : https://semaineatable.onrender.com/ — déployé sur Render depuis GitHub.
 - Tests du moteur et compilation exécutés avec succès. Ne pas présenter cette bêta comme un SaaS commercial déjà opérationnel.
 
 ## Hypothèse commerciale
@@ -35,7 +35,7 @@ Copier `.env.example` en `.env` pour configurer les seules valeurs publiques Sup
 3. Configurer un SMTP de production dans Supabase. Le service e-mail intégré est limité aux membres de l'équipe et n'est pas adapté aux inscriptions publiques. Aucun fournisseur SMTP n'a été provisionné.
 4. Définir `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` dans Render, puis reconstruire le frontend.
 5. Vérifier avec deux comptes : connexion, isolation des données, création, remplacement, suppression, limite gratuite, expiration des droits. Tester aussi les appels API directs malformés et concurrents avant ouverture.
-6. Les fonctions Edge vérifient elles-mêmes les identités et signatures, d'où `verify_jwt=false`. Déployer `billing` et `stripe-webhook`. Les secrets côté serveur sont `APP_ORIGIN`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`, `BILLING_ENABLED=false`. Les variables Supabase serveur sont injectées par Supabase.
+6. Les fonctions Edge vérifient elles-mêmes les identités et signatures, d'où `verify_jwt=false`. Déployer `billing` et `stripe-webhook`. Les secrets côté serveur sont `APP_ORIGIN`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`, `BILLING_ENABLED=false`. Les variables Supabase serveur sont injectées par Supabase. Le frontend exige aussi `VITE_AUTH_ENABLED=true`, à activer uniquement après validation du SMTP, des redirections et du parcours réel.
 7. Créer produit/tarif en **sandbox Stripe** et configurer le webhook pour checkout.session.completed et customer.subscription.created/updated/deleted. Configurer le portail client. Tester paiement, répétitions de checkout, paiements refusés, renouvellement, annulation, événements désordonnés/concurrents et signatures invalides. La gestion des demandes de checkout simultanées et des abonnements multiples doit être renforcée avant activation commerciale.
 8. Finaliser l'identité de l'éditeur, le contact, les conditions de vente, la confidentialité, la suppression de compte et les règles de conservation. Valider les recettes en cuisine et les textes commerciaux.
 9. L'ouverture des ventes nécessite une revue du parcours et la mise à jour explicite du bouton d'abonnement actuellement désactivé. Ne pas activer simplement un secret et considérer le produit terminé.

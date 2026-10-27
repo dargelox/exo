@@ -32,8 +32,9 @@ begin
  if p_label is null or length(trim(p_label)) not between 1 and 80 then raise exception 'Invalid label'; end if;
  if p_payload is null or jsonb_typeof(p_payload) <> 'object' or octet_length(p_payload::text)>50000 then raise exception 'Invalid payload'; end if;
  if not (p_payload ?& array['version','people','diet','maxTime','plan','locked','pantry','checked']) then raise exception 'Incomplete payload'; end if;
+ if jsonb_typeof(p_payload->'version') is distinct from 'number' or jsonb_typeof(p_payload->'people') is distinct from 'number' or jsonb_typeof(p_payload->'diet') is distinct from 'string' or jsonb_typeof(p_payload->'maxTime') is distinct from 'number' then raise exception 'Invalid types'; end if;
  if p_payload->>'version' <> '1' or p_payload->>'people' not in ('1','2','3','4','5','6','7','8') or p_payload->>'diet' not in ('all','vegetarian') or p_payload->>'maxTime' not in ('15','20','25','30') then raise exception 'Invalid preferences'; end if;
- if jsonb_typeof(p_payload->'plan') <> 'array' or jsonb_typeof(p_payload->'locked') <> 'array' or jsonb_typeof(p_payload->'pantry') <> 'object' or jsonb_typeof(p_payload->'checked') <> 'array' then raise exception 'Invalid lists'; end if;
+ if jsonb_typeof(p_payload->'plan') is distinct from 'array' or jsonb_typeof(p_payload->'locked') is distinct from 'array' or jsonb_typeof(p_payload->'pantry') is distinct from 'object' or jsonb_typeof(p_payload->'checked') is distinct from 'array' then raise exception 'Invalid lists'; end if;
  if jsonb_array_length(p_payload->'plan')<>7 or jsonb_array_length(p_payload->'locked')<>7 then raise exception 'Invalid week'; end if;
  perform pg_advisory_xact_lock(hashtextextended(uid::text,0));
  if p_id is not null then
@@ -49,3 +50,6 @@ end;
 $$;
 revoke all on function public.save_meal_plan(uuid,text,jsonb) from public;
 grant execute on function public.save_meal_plan(uuid,text,jsonb) to authenticated;
+-- Supabase can grant EXECUTE to anon directly through default privileges.
+revoke all on function public.has_plus() from anon;
+revoke all on function public.save_meal_plan(uuid,text,jsonb) from anon;
